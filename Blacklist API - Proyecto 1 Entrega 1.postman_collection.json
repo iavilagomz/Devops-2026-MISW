@@ -1,0 +1,369 @@
+{
+	"info": {
+		"_postman_id": "3a8a6e2b-40ee-47b7-ba1c-35e488ae7da8",
+		"name": "Blacklist API - Proyecto 1 Entrega 1",
+		"description": "# Blacklist API | Proyecto 1\n\nMicroservicio REST para administrar la lista negra global de emails. Base URL y JWT se configuran en el environment de Postman; no se publica ninguna credencial ni URL de despliegue. Todas las respuestas usan application/json.\n\n## Autorizacion\n\nLos endpoints de blacklist requieren Authorization: Bearer Token. Configurar bearerToken en el environment privado antes de enviar solicitudes.\n\n## GET /health\n\nComprueba que el servicio esta disponible. No requiere JWT.\n\nSolicitud: GET {{baseUrl}}/health  \nRespuesta 200:\n\n``` json\n{\"status\":\"ok\"}\n\n ```\n\n## POST /blacklists\n\nAgrega un email a la lista negra. Requiere Bearer JWT. Guarda IP de origen y fecha/hora.\n\nBody requerido: email (string), app_uuid (UUID string); blocked_reason es opcional, hasta 255 caracteres.\n\nSolicitud de ejemplo:\n\n``` json\n{\"email\":\"postman.prueba@example.com\",\"app_uuid\":\"e2e1b9a3-5f2d-4df4-a9d6-51ce81591a90\",\"blocked_reason\":\"Prueba de integracion desde Postman\"}\n\n ```\n\nRespuesta 201 (id y fecha ilustrativos):\n\n``` json\n{\"created\":true,\"message\":\"El email fue agregado a la lista negra global.\",\"id\":1,\"email\":\"postman.prueba@example.com\",\"created_at\":\"2026-10-18T12:00:00+00:00\"}\n\n ```\n\nRespuesta de validacion 400 (ejemplo):\n\n``` json\n{\"created\":false,\"errors\":[\"El campo app_uuid debe ser un UUID valido.\"]}\n\n ```\n\n## GET /blacklists/{email}\n\nConsulta si el email esta en la lista negra.\n\nSolicitud: GET {{baseUrl}}/blacklists/[postman.prueba@example.com](https://mailto:postman.prueba@example.com)  \nRespuesta 200 si existe:\n\n``` json\n{\"email\":\"postman.prueba@example.com\",\"blacklisted\":true,\"blocked_reason\":\"Prueba de integracion desde Postman\"}\n\n ```\n\nRespuesta 200 si no existe:\n\n``` json\n{\"email\":\"no-existe-postman@example.com\",\"blacklisted\":false,\"blocked_reason\":null}\n\n ```\n\n## Escenarios incluidos\n\nHealth check; alta valida; consulta del registro creado; consulta de email no registrado; rechazo de email invalido; rechazo de UUID invalido; rechazo de motivo de mas de 255 caracteres; rechazo de solicitud sin Bearer Token (401 o 422 segun JWT). Ejecute en orden. El alta valida modifica la base de datos del ambiente activo.\n\n## Configuracion\n\nImporte el environment Blacklist API - Environment y configure baseUrl con el host de Elastic Beanstalk. Guarde el JWT de forma local como variable secreta bearerToken. No publique ese environment ni copie secretos en la documentacion.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32501627"
+	},
+	"item": [
+		{
+			"name": "00 - Health check",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status 200',()=>pm.response.to.have.status(200));\npm.test('status ok',()=>pm.expect(pm.response.json().status).to.eql('ok'));"
+						]
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/health",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"health"
+					]
+				},
+				"description": "Health: expected 200 {\"status\":\"ok\"}."
+			},
+			"response": []
+		},
+		{
+			"name": "01 - Agregar email valido",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Created 201',()=>pm.response.to.have.status(201));",
+							"pm.test('Created true',()=>pm.expect(pm.response.json().created).to.eql(true));"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\":\"{{testEmail}}\",\n  \"app_uuid\":\"{{appUuid}}\",\n  \"blocked_reason\":\"Prueba de integracion desde Postman\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/blacklists",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"blacklists"
+					]
+				},
+				"description": "Agrega registro. Expected 201 con created, id, email, created_at."
+			},
+			"response": []
+		},
+		{
+			"name": "02 - Consultar email agregado",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status 200',()=>pm.response.to.have.status(200));",
+							"pm.test('Found',()=>pm.expect(pm.response.json().blacklisted).to.eql(true));"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bearerToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/blacklists/{{testEmail}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"blacklists",
+						"{{testEmail}}"
+					]
+				},
+				"description": "Ejecute despues del POST. Expected 200 blacklisted=true y motivo."
+			},
+			"response": []
+		},
+		{
+			"name": "03 - Consultar email inexistente",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status 200',()=>pm.response.to.have.status(200));",
+							"pm.test('Not found',()=>pm.expect(pm.response.json().blacklisted).to.eql(false));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/blacklists/{{unknownEmail}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"blacklists",
+						"{{unknownEmail}}"
+					]
+				},
+				"description": "Expected 200 blacklisted=false, blocked_reason=null."
+			},
+			"response": []
+		},
+		{
+			"name": "04 - Email invalido",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Bad Request',()=>pm.response.to.have.status(400));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"email\":\"no-es-email\",\"app_uuid\":\"{{appUuid}}\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/blacklists",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"blacklists"
+					]
+				},
+				"description": "Expected 400 y errors."
+			},
+			"response": []
+		},
+		{
+			"name": "05 - UUID invalido",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Bad Request',()=>pm.response.to.have.status(400));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"email\":\"postman.prueba@example.com\",\"app_uuid\":\"esto-no-es-uuid\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/blacklists",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"blacklists"
+					]
+				},
+				"description": "Expected 400 y error UUID."
+			},
+			"response": []
+		},
+		{
+			"name": "06 - Motivo mayor a 255",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Bad Request',()=>pm.response.to.have.status(400));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"email\":\"postman.prueba@example.com\",\"app_uuid\":\"{{appUuid}}\",\"blocked_reason\":\"{{longReason}}\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/blacklists",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"blacklists"
+					]
+				},
+				"description": "longReason tiene 256 caracteres. Expected 400."
+			},
+			"response": []
+		},
+		{
+			"name": "07 - Sin token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Reject missing token',()=>pm.expect(pm.response.code).to.be.oneOf([401,422]));"
+						]
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/blacklists/{{testEmail}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"blacklists",
+						"{{testEmail}}"
+					]
+				},
+				"description": "Expected 401 o 422."
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{bearerToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": ""
+		},
+		{
+			"key": "bearerToken",
+			"value": ""
+		},
+		{
+			"key": "testEmail",
+			"value": "postman.prueba@example.com"
+		},
+		{
+			"key": "appUuid",
+			"value": "e2e1b9a3-5f2d-4df4-a9d6-51ce81591a90"
+		},
+		{
+			"key": "unknownEmail",
+			"value": "no-existe-postman.prueba@example.com"
+		},
+		{
+			"key": "longReason",
+			"value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+		}
+	]
+}
