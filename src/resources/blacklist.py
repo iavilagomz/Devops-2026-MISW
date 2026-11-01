@@ -76,7 +76,7 @@ class BlacklistResource(Resource):
             "id": entry.id,
             "email": entry.email,
             "created_at": entry.created_at.isoformat(),
-        }, 200
+        }, 201
 ##ERROR INTRODUCIR
 
 class BlacklistCheckResource(Resource):
