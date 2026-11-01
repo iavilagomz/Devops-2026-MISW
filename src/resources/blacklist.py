@@ -77,7 +77,7 @@ class BlacklistResource(Resource):
             "email": entry.email,
             "created_at": entry.created_at.isoformat(),
         }, 200
-
+##ERROR INTRODUCIR
 
 class BlacklistCheckResource(Resource):
     """GET /blacklists/<email> - consulta si un email esta en la lista negra."""
