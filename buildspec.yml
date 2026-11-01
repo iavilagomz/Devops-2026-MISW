@@ -1,0 +1,51 @@
+version: 0.2
+
+env:
+  variables:
+    PYTHONDONTWRITEBYTECODE: "1"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - echo "Instalando dependencias"
+      - pip install --upgrade pip
+      - pip install -r requirements-dev.txt
+
+  pre_build:
+    commands:
+      - echo "Ejecutando pruebas unitarias"
+      # Si alguna prueba falla, pytest retorna != 0 y el build se detiene
+      # sin generar el artefacto.
+      - mkdir -p reports
+      - python -m pytest --junitxml=reports/junit.xml --cov=src --cov-report=xml:reports/coverage.xml --cov-report=term
+
+  build:
+    commands:
+      - echo "Pruebas exitosas. Generando artefacto para Elastic Beanstalk"
+
+  post_build:
+    commands:
+      - echo "Build finalizado en $(date)"
+
+reports:
+  pruebas-unitarias:
+    files:
+      - junit.xml
+    base-directory: reports
+    file-format: JUNITXML
+  cobertura:
+    files:
+      - coverage.xml
+    base-directory: reports
+    file-format: COBERTURAXML
+
+artifacts:
+  name: blacklist-app-$(date +%Y%m%d-%H%M%S).zip
+  files:
+    - application.py
+    - Procfile
+    - requirements.txt
+    - 'src/**/*'
+    - '.ebextensions/**/*'

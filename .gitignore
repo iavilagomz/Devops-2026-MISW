@@ -19,3 +19,8 @@ instance/
 .vscode/
 .idea/
 .DS_Store
+
+# Reportes de pruebas
+reports/
+.coverage
+.pytest_cache/
