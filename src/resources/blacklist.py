@@ -76,7 +76,7 @@ class BlacklistResource(Resource):
             "id": entry.id,
             "email": entry.email,
             "created_at": entry.created_at.isoformat(),
-        }, 201
+        }, 200
 
 
 class BlacklistCheckResource(Resource):
