@@ -4,8 +4,7 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
   "memory": "1024",
-  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID_PLACEHOLDER:role/LabRole",
-  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID_PLACEHOLDER:role/LabRole",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID_PLACEHOLDER:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "blacklist-app",
