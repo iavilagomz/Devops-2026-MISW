@@ -1,5 +1,3 @@
-"""Punto de entrada WSGI. AWS Elastic Beanstalk busca `application` en este modulo."""
-
 from src import create_app
 
 application = create_app()

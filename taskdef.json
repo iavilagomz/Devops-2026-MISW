@@ -1,0 +1,37 @@
+{
+  "family": "blacklist-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID_PLACEHOLDER:role/LabRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID_PLACEHOLDER:role/LabRole",
+  "containerDefinitions": [
+    {
+      "name": "blacklist-app",
+      "image": "<IMAGE1_NAME>",
+      "essential": true,
+      "portMappings": [
+        { "containerPort": 5000, "protocol": "tcp" }
+      ],
+      "environment": [
+        { "name": "DB_HOST", "value": "DB_HOST_PLACEHOLDER" },
+        { "name": "DB_PORT", "value": "5432" },
+        { "name": "DB_NAME", "value": "DB_NAME_PLACEHOLDER" },
+        { "name": "DB_USER", "value": "DB_USER_PLACEHOLDER" },
+        { "name": "DB_PASSWORD", "value": "DB_PASSWORD_PLACEHOLDER" },
+        { "name": "JWT_SECRET_KEY", "value": "JWT_SECRET_KEY_PLACEHOLDER" },
+        { "name": "API_IDENTITY", "value": "blacklist-service" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/blacklist-app",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}

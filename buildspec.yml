@@ -3,6 +3,9 @@ version: 0.2
 env:
   variables:
     PYTHONDONTWRITEBYTECODE: "1"
+    IMAGE_REPO_NAME: "blacklist-app"
+  # DB_HOST, DB_NAME, DB_USER, DB_PASSWORD y JWT_SECRET_KEY se definen como
+  # variables de entorno del proyecto de CodeBuild (no se versionan).
 
 phases:
   install:
@@ -16,17 +19,32 @@ phases:
   pre_build:
     commands:
       - echo "Ejecutando pruebas unitarias"
-      # Si alguna prueba falla, pytest retorna != 0 y el build se detiene
-      # sin generar el artefacto.
+      # Si alguna prueba falla, pytest retorna != 0 y el build se detiene:
+      # no se construye ni se publica imagen, y no hay despliegue.
       - mkdir -p reports
       - python -m pytest --junitxml=reports/junit.xml --cov=src --cov-report=xml:reports/coverage.xml --cov-report=term
+      - echo "Autenticando en Amazon ECR"
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${IMAGE_TAG:-latest}
 
   build:
     commands:
-      - echo "Pruebas exitosas. Generando artefacto para Elastic Beanstalk"
+      - echo "Pruebas exitosas. Construyendo imagen Docker $REPOSITORY_URI:$IMAGE_TAG"
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
 
   post_build:
     commands:
+      - if [ "$CODEBUILD_BUILD_SUCCEEDING" != "1" ]; then echo "Build fallido, no se publica imagen"; exit 1; fi
+      - echo "Publicando imagen en ECR"
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo "Generando artefactos para CodeDeploy"
+      - printf '{"ImageURI":"%s"}' $REPOSITORY_URI:$IMAGE_TAG > imageDetail.json
+      - sed -i "s|ACCOUNT_ID_PLACEHOLDER|$ACCOUNT_ID|g; s|DB_HOST_PLACEHOLDER|$DB_HOST|g; s|DB_NAME_PLACEHOLDER|$DB_NAME|g; s|DB_USER_PLACEHOLDER|$DB_USER|g; s|DB_PASSWORD_PLACEHOLDER|$DB_PASSWORD|g; s|JWT_SECRET_KEY_PLACEHOLDER|$JWT_SECRET_KEY|g" taskdef.json
       - echo "Build finalizado en $(date)"
 
 reports:
@@ -42,10 +60,7 @@ reports:
     file-format: COBERTURAXML
 
 artifacts:
-  name: blacklist-app-$(date +%Y%m%d-%H%M%S).zip
   files:
-    - application.py
-    - Procfile
-    - requirements.txt
-    - 'src/**/*'
-    - '.ebextensions/**/*'
+    - imageDetail.json
+    - appspec.yaml
+    - taskdef.json

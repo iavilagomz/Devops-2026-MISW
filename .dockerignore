@@ -1,0 +1,12 @@
+.git
+.github
+.env
+*.mp4
+*.json
+tests
+reports
+__pycache__
+*.pyc
+.ebextensions
+venv
+.venv
