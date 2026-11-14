@@ -6,4 +6,4 @@ Resources:
         TaskDefinition: <TASK_DEFINITION>
         LoadBalancerInfo:
           ContainerName: "blacklist-app"
-          ContainerPort: 8000
+          ContainerPort: 5000
