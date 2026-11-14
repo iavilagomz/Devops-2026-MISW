@@ -4,8 +4,7 @@
 def test_health_responde_ok(client):
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.get_json() == {"status": "ok"}
-
+    assert response.get_json() == {"status": "ok", "version": "v2"}
 
 def test_raiz_responde_ok(client):
     assert client.get("/").status_code == 200
